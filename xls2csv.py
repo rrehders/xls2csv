@@ -12,7 +12,7 @@ def xlstoidx(input):
     val = 0
     for letter in input:
         val *= 26
-        val += ord(letter)-64
+        val += ord(letter)-63
     return val-1
 
 # Validate the correct number of command line args
@@ -29,7 +29,7 @@ if not os.path.isfile(fname):
     sys.exit()
 
 # Set execution parameters
-cols=[]
+cols=set()
 sheetnum = -1
 
 # Check for additional options
@@ -43,9 +43,9 @@ if arglen > 2:
             params = val.split(',')
             for param in params:
                 if param.isdecimal():
-                    cols.append(int(param))
+                    cols.add(int(param))
                 elif param.isalpha():
-                    cols.append(xlstoidx(param))
+                    cols.add(xlstoidx(param))
                 else:
                     print('ERR: '+argument+' is an invalid argument')
                     sys.exit()
@@ -95,14 +95,17 @@ if len(cols) == 0:
         table += [row]
         print('')
 else:
+    # Repair loop indexes and investigate openpyxl function for converting strings to indexes
     # Build lists of values for each row for the specified columns
+    # Discard columns which are invalid
+    cols = cols.intersection(range(xlsheet.get_highest_column()+1))
     print('Extracting values')
     table = []
     for rowOfCellObjs in xlsheet:
         row = []
         col = 0
         for cellObj in rowOfCellObjs:
-            if  col in cols:
+            if col in cols:
                 row += [cellObj.value]
             col += 1
             print('.', end='')
