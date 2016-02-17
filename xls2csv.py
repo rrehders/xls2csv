@@ -7,14 +7,6 @@ import csv
 
 __author__ = 'rrehders'
 
-#Define common functions
-def xlstoidx(input):
-    val = 0
-    for letter in input:
-        val *= 26
-        val += ord(letter)-63
-    return val-1
-
 # Validate the correct number of command line args
 arglen = len(sys.argv)
 if arglen < 2:
@@ -29,23 +21,23 @@ if not os.path.isfile(fname):
     sys.exit()
 
 # Set execution parameters
-cols=set()
+cols = set()
 sheetnum = -1
 
 # Check for additional options
 if arglen > 2:
-    i = 2
-    while i < arglen:
-        argument = sys.argv[i].strip().upper()
+    # Loop through the parameters skipping the first
+    for idx in range(2, arglen):
+        argument = sys.argv[idx].strip().upper()
         if argument.startswith('COL='):
-            #Break remainder of parameter by whitespace
+            # Seperate columns by the ','
             val = argument[4:]
             params = val.split(',')
             for param in params:
                 if param.isdecimal():
                     cols.add(int(param))
                 elif param.isalpha():
-                    cols.add(xlstoidx(param))
+                    cols.add(openpyxl.utils.column_index_from_string(param))
                 else:
                     print('ERR: '+argument+' is an invalid argument')
                     sys.exit()
@@ -53,7 +45,6 @@ if arglen > 2:
             val = argument[6:]
             if val.isdecimal():
                 sheetnum = int(val)
-        i += 1
 
 # load the target workbook
 print('XLS2CSV: Convert an Excel worksheet to CSV')
@@ -81,11 +72,12 @@ if sheetnum not in range(len(sheetnms)):
     print('')
 
 # Set the active sheet to the selection
+print('Sheet: '+sheetnms[sheetnum])
 xlsheet = wb.get_sheet_by_name(sheetnms[sheetnum])
 
 if len(cols) == 0:
     # Build lists of values for each row
-    print('Extracting values')
+    print('Extracting all columns')
     table = []
     for rowOfCellObjs in xlsheet:
         row = []
@@ -99,11 +91,11 @@ else:
     # Build lists of values for each row for the specified columns
     # Discard columns which are invalid
     cols = cols.intersection(range(xlsheet.get_highest_column()+1))
-    print('Extracting values')
+    print('Extracting columns: ' + str(cols))
     table = []
     for rowOfCellObjs in xlsheet:
         row = []
-        col = 0
+        col = 1
         for cellObj in rowOfCellObjs:
             if col in cols:
                 row += [cellObj.value]
